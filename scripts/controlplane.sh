@@ -7,10 +7,12 @@ set -euxo pipefail
 NODENAME=$(hostname -s)
 
 sudo kubeadm config images pull
-
+sudo ip addr
+echo $NODENAME
 echo "Preflight Check Passed: Downloaded All Required Images"
+# sed -i 's/registry.k8s.io\/pause:3.10/registry.aliyuncs.com\/google_containers\/pause:3.9/g' /etc/containerd/config.toml
 
-sudo kubeadm init --apiserver-advertise-address=$CONTROL_IP --apiserver-cert-extra-sans=$CONTROL_IP --pod-network-cidr=$POD_CIDR --service-cidr=$SERVICE_CIDR --node-name "$NODENAME" --ignore-preflight-errors Swap
+sudo kubeadm init --v=5 --apiserver-advertise-address=$CONTROL_IP --apiserver-cert-extra-sans=$CONTROL_IP --pod-network-cidr=$POD_CIDR --service-cidr=$SERVICE_CIDR --node-name "$NODENAME" --ignore-preflight-errors Swap
 
 mkdir -p "$HOME"/.kube
 sudo cp -i /etc/kubernetes/admin.conf "$HOME"/.kube/config
@@ -32,7 +34,7 @@ cp -i /etc/kubernetes/admin.conf $config_path/config
 touch $config_path/join.sh
 chmod +x $config_path/join.sh
 
-kubeadm token create --print-join-command > $config_path/join.sh
+kubeadm token create --print-join-command >$config_path/join.sh
 
 # Install Calico Network Plugin
 
@@ -40,7 +42,7 @@ curl https://raw.githubusercontent.com/projectcalico/calico/v${CALICO_VERSION}/m
 
 kubectl apply -f calico.yaml
 
-sudo -i -u vagrant bash << EOF
+sudo -i -u vagrant bash <<EOF
 whoami
 mkdir -p /home/vagrant/.kube
 sudo cp -i $config_path/config /home/vagrant/.kube/
@@ -51,4 +53,3 @@ EOF
 # Install Metrics Server
 
 kubectl apply -f https://raw.githubusercontent.com/techiescamp/kubeadm-scripts/main/manifests/metrics-server.yaml
-
